@@ -1,3 +1,5 @@
+using ServiceLib.Services;
+
 namespace ServiceLib.ViewModels;
 
 public class StatusBarViewModel : MyReactiveObject
@@ -372,6 +374,21 @@ public class StatusBarViewModel : MyReactiveObject
 
     public async Task TestServerAvailabilityResult(string msg)
     {
+        // 仅保留“当前延迟: xxx ms”
+        if (!msg.IsNullOrEmpty())
+        {
+            var idx = msg.IndexOf("当前延迟:", StringComparison.Ordinal);
+            if (idx >= 0)
+            {
+                var msIdx = msg.IndexOf("ms", idx, StringComparison.OrdinalIgnoreCase);
+                if (msIdx > idx)
+                {
+                    RunningInfoDisplay = msg.Substring(idx, (msIdx - idx) + 2).Trim();
+                    return;
+                }
+            }
+        }
+
         RunningInfoDisplay = msg;
         await Task.CompletedTask;
     }

@@ -35,7 +35,8 @@
                 VerticalAlignment="Center"
                 Margin="{StaticResource MarginLr8}"
                 DockPanel.Dock="Left"
-                Orientation="Horizontal">
+                Orientation="Horizontal"
+                IsVisible="False">
                 <TextBlock
                     VerticalAlignment="Center"
                     Margin="{StaticResource MarginLr8}"
@@ -69,12 +70,14 @@
                     Margin="{StaticResource MarginLr8}"
                     DisplayMemberBinding="{Binding Remarks}"
                     ItemsSource="{Binding RoutingItems}"
+                    IsVisible="False"
                     ToolTip.Tip="{x:Static resx:ResUI.menuRouting}" />
             </StackPanel>
 
             <StackPanel VerticalAlignment="Center" Margin="{StaticResource MarginLr8}">
-                <TextBlock x:Name="txtRunningServerDisplay" />
-                <Border Margin="1" />
+                <!-- 隐藏“默认VPN服务器/运行节点”显示，仅保留当前延迟 -->
+                <TextBlock x:Name="txtRunningServerDisplay" IsVisible="False" />
+                <Border Margin="1" IsVisible="False" />
                 <TextBlock x:Name="txtRunningInfoDisplay" />
             </StackPanel>
         </DockPanel>

@@ -1,5 +1,7 @@
 using Avalonia.Controls.Notifications;
 using DialogHostAvalonia;
+using ServiceLib.Handler.SysProxy;
+using ServiceLib.Services;
 using v2rayN.Desktop.Base;
 using v2rayN.Desktop.Common;
 using v2rayN.Desktop.Manager;
@@ -13,6 +15,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private CheckUpdateView? _checkUpdateView;
     private BackupAndRestoreView? _backupAndRestoreView;
     private bool _blCloseByUser = false;
+    private bool _isLoggingOut = false;
 
     public MainWindow()
     {
@@ -23,12 +26,17 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
         KeyDown += MainWindow_KeyDown;
         menuSettingsSetUWP.Click += MenuSettingsSetUWP_Click;
-        menuPromotion.Click += MenuPromotion_Click;
-        menuCheckUpdate.Click += MenuCheckUpdate_Click;
-        menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
+        // menuPromotion.Click += MenuPromotion_Click; // 隐藏推广
+        // menuCheckUpdate.Click += MenuCheckUpdate_Click; // 隐藏更新检查
+        // menuBackupAndRestore.Click += MenuBackupAndRestore_Click; // 隐藏备份恢复
+        menuLogout.Click += MenuLogout_Click;
         menuClose.Click += MenuClose_Click;
 
         ViewModel = new MainWindowViewModel(UpdateViewHandler);
+
+        // 设置用户姓名
+        ViewModel.UserName = ServiceLib.Services.AuthService.Instance.UserName ?? "";
+        ViewModel.RaisePropertyChanged(nameof(ViewModel.HasUserName));
 
         switch (_config.UiItem.MainGirdOrientation)
         {
@@ -86,18 +94,11 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             this.BindCommand(ViewModel, vm => vm.SubGroupUpdateCmd, v => v.menuSubGroupUpdate).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SubGroupUpdateViaProxyCmd, v => v.menuSubGroupUpdateViaProxy).DisposeWith(disposables);
 
-            //setting
+            //setting - 保留核心设置功能
             this.BindCommand(ViewModel, vm => vm.OptionSettingCmd, v => v.menuOptionSetting).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RoutingSettingCmd, v => v.menuRoutingSetting).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.DNSSettingCmd, v => v.menuDNSSetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.FullConfigTemplateCmd, v => v.menuFullConfigTemplate).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.GlobalHotkeySettingCmd, v => v.menuGlobalHotkeySetting).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RebootAsAdminCmd, v => v.menuRebootAsAdmin).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.ClearServerStatisticsCmd, v => v.menuClearServerStatistics).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.OpenTheFileLocationCmd, v => v.menuOpenTheFileLocation).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RegionalPresetDefaultCmd, v => v.menuRegionalPresetsDefault).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RegionalPresetRussiaCmd, v => v.menuRegionalPresetsRussia).DisposeWith(disposables);
-            this.BindCommand(ViewModel, vm => vm.RegionalPresetIranCmd, v => v.menuRegionalPresetsIran).DisposeWith(disposables);
+            // 隐藏其他设置功能
 
             this.BindCommand(ViewModel, vm => vm.ReloadCmd, v => v.menuReload).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.BlReloadEnabled, v => v.menuReload.IsEnabled).DisposeWith(disposables);
@@ -144,23 +145,18 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
               .Subscribe(content => Shutdown(content))
               .DisposeWith(disposables);
 
-            AppEvents.ShowHideWindowRequested
-             .AsObservable()
-             .ObserveOn(RxApp.MainThreadScheduler)
-             .Subscribe(blShow => ShowHideWindow(blShow))
-             .DisposeWith(disposables);
+            // Show/Hide 由 App 统一处理（根据登录态选择 LoginWindow/MainWindow），避免未登录时不生效
+
+            // 登出窗口切换由 App 统一处理，避免 MainWindow 重复创建/显示 LoginWindow
         });
+
+        // 统一标题
+        Title = "小鲤鱼";
 
         if (Utils.IsWindows())
         {
-            Title = $"{Utils.GetVersion()} - {(Utils.IsAdministrator() ? ResUI.RunAsAdmin : ResUI.NotRunAsAdmin)}";
-
             ThreadPool.RegisterWaitForSingleObject(Program.ProgramStarted, OnProgramStarted, null, -1, false);
             HotkeyManager.Instance.Init(_config, OnHotkeyHandler);
-        }
-        else
-        {
-            Title = $"{Utils.GetVersion()}";
         }
         menuAddServerViaScan.IsVisible = false;
 
@@ -374,6 +370,11 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         DialogHost.Show(_backupAndRestoreView);
     }
 
+    private async void MenuLogout_Click(object? sender, RoutedEventArgs e)
+    {
+        await PerformLogout();
+    }
+
     private async void MenuClose_Click(object? sender, RoutedEventArgs e)
     {
         if (await UI.ShowYesNo(this, ResUI.menuExitTips) != ButtonResult.Yes)
@@ -401,12 +402,70 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
     }
 
+    /// <summary>
+    /// 执行注销操作：停止VPN、清除系统代理、清除登录信息、切换到登录窗口
+    /// </summary>
+    private async Task PerformLogout()
+    {
+        if (_isLoggingOut)
+        {
+            return;
+        }
+        _isLoggingOut = true;
+        try
+        {
+            Logging.SaveLog("PerformLogout: Start logout");
+
+            // 停止VPN
+            await CoreManager.Instance.CoreStop();
+            Logging.SaveLog("PerformLogout: VPN stopped");
+
+            // 清除系统代理
+            await SysProxyHandler.UpdateSysProxy(_config, true);
+            Logging.SaveLog("PerformLogout: System proxy cleared");
+
+            // 清除登录信息
+            AuthService.Instance.ClearAuth();
+            Logging.SaveLog("PerformLogout: Auth cleared");
+
+            // 切换到登录窗口（由 App 统一处理）
+            AppEvents.LogoutRequested.Publish();
+            // 不在这里直接 Close 主窗口：Avalonia 默认关闭 MainWindow 可能会导致应用退出
+            // 由 App 先切换 MainWindow 为 LoginWindow 后，再关闭旧主窗口
+            Hide();
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("PerformLogout", ex);
+        }
+        finally
+        {
+            _isLoggingOut = false;
+        }
+    }
+
+    /// <summary>
+    /// 供 App 在切换到登录窗口时调用，确保 MainWindow 不会被 OnClosing 拦截而只是 Hide。
+    /// </summary>
+    public void CloseByApp()
+    {
+        _blCloseByUser = true;
+        Close();
+    }
+
     #endregion Event
 
     #region UI
 
     public void ShowHideWindow(bool? blShow)
     {
+        // 如果未登录，不显示主窗口，触发登出事件切换到登录窗口
+        if (!AuthService.Instance.IsLoggedIn)
+        {
+            AppEvents.LogoutRequested.Publish();
+            return;
+        }
+
         var bl = blShow ??
                     (Utils.IsLinux()
                     ? (!_config.UiItem.ShowInTaskbar ^ (WindowState == WindowState.Minimized))

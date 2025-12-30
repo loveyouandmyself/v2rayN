@@ -997,6 +997,15 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
+        ///   查找类似 注销 的本地化字符串。
+        /// </summary>
+        public static string menuLogout {
+            get {
+                return ResourceManager.GetString("menuLogout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Are you sure you want to exit? 的本地化字符串。
         /// </summary>
         public static string menuExitTips {

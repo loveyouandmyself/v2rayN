@@ -93,6 +93,8 @@ public static class ConfigHandler
             Mtu = 9000,
         };
         config.GuiItem ??= new();
+        // 精简版：保留流量/下载量统计显示
+        config.GuiItem.EnableStatistics = true;
         config.MsgUIItem ??= new();
 
         config.UiItem ??= new UIItem()
@@ -169,6 +171,64 @@ public static class ConfigHandler
         }
 
         return config;
+    }
+
+    /// <summary>
+    /// 初始化默认vmess配置
+    /// </summary>
+    public static async Task<int> InitDefaultVmessServer(Config config)
+    {
+        // 查找所有名称不是"小鲤鱼"的vmess服务器（比如"默认vpn服务器"等）
+        var oldVmessServers = await SQLiteHelper.Instance.TableAsync<ProfileItem>()
+            .Where(t => t.ConfigType == EConfigType.VMess && t.Remarks != "小鲤鱼")
+            .ToListAsync();
+
+        // 如果存在旧的vmess服务器，删除它们（确保系统只有一个"小鲤鱼"服务器）
+        if (oldVmessServers.Count > 0)
+        {
+            await RemoveServers(config, oldVmessServers);
+        }
+
+        // 检查是否已存在名为"小鲤鱼"的vmess服务器
+        var existingServer = await SQLiteHelper.Instance.TableAsync<ProfileItem>()
+            .FirstOrDefaultAsync(t => t.Remarks == "小鲤鱼" && t.ConfigType == EConfigType.VMess);
+
+        if (existingServer != null)
+        {
+            // 如果已存在，设置为默认
+            await SetDefaultServerIndex(config, existingServer.IndexId);
+            return 0;
+        }
+
+        // 如果不存在"小鲤鱼"服务器，创建新的默认vmess配置
+        var profileItem = new ProfileItem
+        {
+            IndexId = Utils.GetGuid(false),
+            ConfigType = EConfigType.VMess,
+            ConfigVersion = 2,
+            Address = "23.105.208.92",
+            Port = 52725,
+            Id = "f6e85969-fbc1-4014-a19a-f05bdcf22038",
+            AlterId = 0,
+            Security = "auto",
+            Network = "tcp",
+            HeaderType = "http",
+            RequestHost = "",
+            Path = "",
+            StreamSecurity = "none",
+            AllowInsecure = "",
+            Remarks = "小鲤鱼",
+            IsSub = false,
+            Subid = ""
+        };
+
+        // 添加到数据库
+        await AddVMessServer(config, profileItem, true);
+
+        // 设置为默认服务器
+        await SetDefaultServerIndex(config, profileItem.IndexId);
+
+        return 0;
     }
 
     /// <summary>

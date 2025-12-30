@@ -1,3 +1,7 @@
+using ServiceLib.Events;
+using ServiceLib.Handler.SysProxy;
+using ServiceLib.Services;
+
 namespace ServiceLib.Manager;
 
 public class TaskManager
@@ -33,6 +37,19 @@ public class TaskManager
             catch (Exception ex)
             {
                 Logging.SaveLog("ScheduledTasks - UpdateTaskRunSubscription", ex);
+            }
+
+            //Execute once 5 minute - 验证授权码
+            if (numOfExecuted % 5 == 0)
+            {
+                try
+                {
+                    await UpdateTaskValidateAuth();
+                }
+                catch (Exception ex)
+                {
+                    Logging.SaveLog("ScheduledTasks - UpdateTaskValidateAuth", ex);
+                }
             }
 
             //Execute once 20 minute
@@ -115,6 +132,48 @@ public class TaskManager
             {
                 await _updateFunc?.Invoke(false, msg);
             }).UpdateGeoFileAll();
+        }
+    }
+
+    /// <summary>
+    /// 验证授权码是否有效
+    /// </summary>
+    private async Task UpdateTaskValidateAuth()
+    {
+        if (!AuthService.Instance.IsLoggedIn)
+        {
+            Logging.SaveLog("UpdateTaskValidateAuth: User not logged in, skip validation");
+            return;
+        }
+
+        Logging.SaveLog("UpdateTaskValidateAuth: Start validating auth");
+
+        var isValid = await AuthService.Instance.ValidateAuthAsync();
+        Logging.SaveLog($"UpdateTaskValidateAuth: Validation result = {isValid}");
+        
+        if (!isValid)
+        {
+            Logging.SaveLog("UpdateTaskValidateAuth: Auth validation failed, stopping VPN and clearing auth");
+            
+            // 停止VPN
+            await CoreManager.Instance.CoreStop();
+            Logging.SaveLog("UpdateTaskValidateAuth: VPN stopped");
+            
+            // 清除系统代理
+            await SysProxyHandler.UpdateSysProxy(_config, true);
+            Logging.SaveLog("UpdateTaskValidateAuth: System proxy cleared");
+            
+            // 清除登录信息
+            AuthService.Instance.ClearAuth();
+            Logging.SaveLog("UpdateTaskValidateAuth: Auth cleared");
+            
+            // 触发登出事件，切换到登录窗口
+            AppEvents.LogoutRequested.Publish();
+            AppEvents.SendSnackMsgRequested.Publish("授权码已失效，请重新登录");
+        }
+        else
+        {
+            Logging.SaveLog("UpdateTaskValidateAuth: Auth validation passed");
         }
     }
 }

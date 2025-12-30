@@ -1,4 +1,6 @@
 using System.Reactive.Concurrency;
+using ServiceLib.Services;
+using ServiceLib.Manager;
 
 namespace ServiceLib.ViewModels;
 
@@ -63,6 +65,9 @@ public class MainWindowViewModel : MyReactiveObject
     public int TabMainSelectedIndex { get; set; }
 
     [Reactive] public bool BlIsWindows { get; set; }
+
+    [Reactive] public string UserName { get; set; } = string.Empty;
+    public bool HasUserName => !UserName.IsNullOrEmpty();
 
     #endregion Menu
 
@@ -260,6 +265,15 @@ public class MainWindowViewModel : MyReactiveObject
         await ConfigHandler.InitBuiltinFullConfigTemplate(_config);
         await ProfileExManager.Instance.Init();
         await ProfileGroupItemManager.Instance.Init();
+
+        // 初始化默认vmess服务器
+        await ConfigHandler.InitDefaultVmessServer(_config);
+
+        // 检查并自动下载 Xray 核心文件（如果不存在）
+        await EnsureXrayCoreExists();
+        // 检查并自动下载 geo 文件（geosite.dat / geoip.dat），否则 Xray 无法解析 geosite:xxx
+        await EnsureGeoFilesExists();
+
         await CoreManager.Instance.Init(_config, UpdateHandler);
         TaskManager.Instance.RegUpdateTask(_config, UpdateTaskHandler);
 
@@ -269,7 +283,96 @@ public class MainWindowViewModel : MyReactiveObject
         }
         await RefreshServers();
 
+        // 自动连接
         await Reload();
+    }
+
+    /// <summary>
+    /// 确保 Xray 核心文件存在，如果不存在则自动下载
+    /// </summary>
+    private async Task EnsureXrayCoreExists()
+    {
+        try
+        {
+            var coreInfo = CoreInfoManager.Instance.GetCoreInfo(ECoreType.Xray);
+            if (coreInfo == null)
+            {
+                return;
+            }
+
+            // 检查 Xray 是否已存在
+            var xrayPath = CoreInfoManager.Instance.GetCoreExecFile(coreInfo, out var msg);
+            if (!string.IsNullOrEmpty(xrayPath) && File.Exists(xrayPath))
+            {
+                // Xray 已存在，无需下载
+                return;
+            }
+
+            // Xray 不存在，自动下载
+            await UpdateHandler(false, "正在自动下载 Xray 核心文件，请稍候...");
+            
+            var updateService = new UpdateService(_config, async (notify, message) =>
+            {
+                await UpdateHandler(notify, message);
+            });
+            
+            await updateService.CheckUpdateCore(ECoreType.Xray, false);
+            
+            // 再次检查是否下载成功
+            xrayPath = CoreInfoManager.Instance.GetCoreExecFile(coreInfo, out msg);
+            if (string.IsNullOrEmpty(xrayPath) || !File.Exists(xrayPath))
+            {
+                await UpdateHandler(false, $"Xray 核心文件下载失败: {msg}");
+            }
+            else
+            {
+                await UpdateHandler(false, "Xray 核心文件下载成功");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MainWindowViewModel", ex);
+            await UpdateHandler(false, $"检查 Xray 核心文件时出错: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 确保 geo 文件存在（geosite.dat / geoip.dat），缺失时自动下载到 bin 目录
+    /// </summary>
+    private async Task EnsureGeoFilesExists()
+    {
+        try
+        {
+            var geositePath = Utils.GetBinPath("geosite.dat");
+            var geoipPath = Utils.GetBinPath("geoip.dat");
+
+            if (File.Exists(geositePath) && File.Exists(geoipPath))
+            {
+                return;
+            }
+
+            await UpdateHandler(false, "正在自动下载规则库文件（geosite.dat / geoip.dat）...");
+            var updateService = new UpdateService(_config, async (notify, message) =>
+            {
+                await UpdateHandler(notify, message);
+            });
+
+            await updateService.UpdateGeoFileAll();
+
+            if (!File.Exists(geositePath) || !File.Exists(geoipPath))
+            {
+                await UpdateHandler(false, $"规则库文件下载失败，请检查网络。缺失: {(File.Exists(geositePath) ? "" : "geosite.dat ")}{(File.Exists(geoipPath) ? "" : "geoip.dat")}".Trim());
+            }
+            else
+            {
+                await UpdateHandler(false, "规则库文件下载成功");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("MainWindowViewModel", ex);
+            await UpdateHandler(false, $"下载规则库文件时出错: {ex.Message}");
+        }
     }
 
     #endregion Init

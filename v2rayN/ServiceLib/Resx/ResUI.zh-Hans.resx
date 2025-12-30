@@ -408,6 +408,9 @@
   <data name="menuExit" xml:space="preserve">
     <value>退出</value>
   </data>
+  <data name="menuLogout" xml:space="preserve">
+    <value>注销</value>
+  </data>
   <data name="menuGlobalHotkeySetting" xml:space="preserve">
     <value>全局热键设置</value>
   </data>
@@ -1315,7 +1318,7 @@
     <value>安装字体到系统中，选择或填入字体名称，重启生效</value>
   </data>
   <data name="menuExitTips" xml:space="preserve">
-    <value>是否确定退出？</value>
+    <value>是否确定退出小鲤鱼？</value>
   </data>
   <data name="LvMemo" xml:space="preserve">
     <value>备注备忘</value>

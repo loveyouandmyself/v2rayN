@@ -1,0 +1,25 @@
+server {
+    listen 80;
+    server_name your-domain.example;
+
+    # 如果你用了 HTTPS，请在这里改成 443 + 证书配置
+
+    # 静态文件根目录
+    root /var/www/eyesat-vpn;
+
+    # Geo 文件：/geo/geosite.dat /geo/geoip.dat
+    location /geo/ {
+        autoindex off;
+        add_header Cache-Control "public, max-age=3600";
+        try_files $uri =404;
+    }
+
+    # Xray Core（可选）：/xray/vX.Y.Z/xxx.zip
+    location /xray/ {
+        autoindex off;
+        add_header Cache-Control "public, max-age=3600";
+        try_files $uri =404;
+    }
+}
+
+

@@ -8,7 +8,7 @@
     xmlns:resx="clr-namespace:ServiceLib.Resx;assembly=ServiceLib"
     xmlns:view="using:v2rayN.Desktop.Views"
     xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
-    Title="v2rayN"
+    Title="小鲤鱼"
     Width="1200"
     Height="800"
     MinWidth="900"
@@ -23,9 +23,19 @@
         DisableOpeningAnimation="True">
         <DockPanel>
             <DockPanel Margin="{StaticResource Margin8}" DockPanel.Dock="Top">
-                <ContentControl x:Name="conTheme" DockPanel.Dock="Right" />
+                <TextBlock
+                    x:Name="txtUserName"
+                    Text="{Binding UserName}"
+                    FontSize="14"
+                    VerticalAlignment="Center"
+                    Margin="0,0,10,0"
+                    DockPanel.Dock="Right"
+                    IsVisible="{Binding HasUserName}" />
+                <!-- 隐藏“名称左侧的三点”(主题/更多按钮) -->
+                <ContentControl x:Name="conTheme" DockPanel.Dock="Right" IsVisible="False" />
                 <Menu Margin="{StaticResource Margin4}">
-                    <MenuItem Header="{x:Static resx:ResUI.menuServers}">
+                    <!-- 服务器菜单：为兼容现有 code-behind 保留控件，但整体隐藏 -->
+                    <MenuItem Header="{x:Static resx:ResUI.menuServers}" IsVisible="False">
                         <MenuItem
                             x:Name="menuAddServerViaClipboard"
                             Header="{x:Static resx:ResUI.menuAddServerViaClipboard}"
@@ -52,7 +62,8 @@
                         <MenuItem x:Name="menuAddAnytlsServer" Header="{x:Static resx:ResUI.menuAddAnytlsServer}" />
                     </MenuItem>
 
-                    <MenuItem Header="{x:Static resx:ResUI.menuSubscription}">
+                    <!-- 订阅菜单：为兼容现有 code-behind 保留控件，但整体隐藏 -->
+                    <MenuItem Header="{x:Static resx:ResUI.menuSubscription}" IsVisible="False">
                         <MenuItem x:Name="menuSubSetting" Header="{x:Static resx:ResUI.menuSubSetting}" />
                         <Separator />
                         <MenuItem x:Name="menuSubUpdate" Header="{x:Static resx:ResUI.menuSubUpdate}" />
@@ -61,7 +72,8 @@
                         <MenuItem x:Name="menuSubGroupUpdateViaProxy" Header="{x:Static resx:ResUI.menuSubGroupUpdateViaProxy}" />
                     </MenuItem>
 
-                    <MenuItem Header="{x:Static resx:ResUI.menuSetting}">
+                    <!-- 隐藏设置菜单（但保留内部控件以兼容 code-behind） -->
+                    <MenuItem Header="{x:Static resx:ResUI.menuSetting}" IsVisible="False">
                         <MenuItem x:Name="menuOptionSetting" Header="{x:Static resx:ResUI.menuOptionSetting}" />
                         <MenuItem x:Name="menuRoutingSetting" Header="{x:Static resx:ResUI.menuRoutingSetting}" />
                         <MenuItem x:Name="menuDNSSetting" Header="{x:Static resx:ResUI.menuDNSSetting}" />
@@ -90,15 +102,16 @@
                         <MenuItem x:Name="menuOpenTheFileLocation" Header="{x:Static resx:ResUI.menuOpenTheFileLocation}" />
                     </MenuItem>
 
-                    <MenuItem x:Name="menuHelp" Header="{x:Static resx:ResUI.menuHelp}">
+                    <!-- 帮助菜单：为兼容现有 code-behind 保留控件，但整体隐藏 -->
+                    <MenuItem x:Name="menuHelp" Header="{x:Static resx:ResUI.menuHelp}" IsVisible="False">
                         <MenuItem x:Name="menuCheckUpdate" Header="{x:Static resx:ResUI.menuCheckUpdate}" />
                         <Separator />
                     </MenuItem>
 
-                    <MenuItem x:Name="menuReload" Header="{x:Static resx:ResUI.menuReload}" />
+                    <!-- Reload：为兼容现有 code-behind 保留控件，但隐藏 -->
+                    <MenuItem x:Name="menuReload" Header="{x:Static resx:ResUI.menuReload}" IsVisible="False" />
 
-                    <MenuItem x:Name="menuPromotion" Header="{x:Static resx:ResUI.menuPromotion}" />
-
+                    <MenuItem x:Name="menuLogout" Header="{x:Static resx:ResUI.menuLogout}" />
                     <MenuItem x:Name="menuClose" Header="{x:Static resx:ResUI.menuExit}" />
                 </Menu>
             </DockPanel>

@@ -20,6 +20,7 @@ public static class AppEvents
     public static readonly EventChannel<bool> ShutdownRequested = new();
 
     public static readonly EventChannel<Unit> AdjustMainLvColWidthRequested = new();
+    public static readonly EventChannel<Unit> LogoutRequested = new();
 
     public static readonly EventChannel<string> SetDefaultServerRequested = new();
 

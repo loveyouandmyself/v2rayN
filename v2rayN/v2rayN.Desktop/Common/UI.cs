@@ -5,7 +5,7 @@ namespace v2rayN.Desktop.Common;
 
 internal class UI
 {
-    private static readonly string caption = Global.AppName;
+    private static readonly string caption = "小鲤鱼";
 
     public static async Task<ButtonResult> ShowYesNo(Window owner, string msg)
     {
