@@ -1,7 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 using ReactiveUI;
 using v2rayN.Desktop.Base;
 using v2rayN.Desktop.ViewModels;
@@ -15,13 +13,13 @@ public partial class LoginWindow : WindowBase<LoginViewModel>
         InitializeComponent();
         ViewModel = new LoginViewModel();
 
-        ViewModel.LoginCmd
+        ViewModel.ActivateCmd
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(response =>
         {
             if (response != null && response.Success)
             {
-                // 登录成功：切换到主窗口
+                // 激活成功：切换到主窗口
                 if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     var main = new MainWindow();
@@ -41,14 +39,6 @@ public partial class LoginWindow : WindowBase<LoginViewModel>
                 desktop.Shutdown();
             }
         };
-    }
-
-    private void KeyDown_OnKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter && ViewModel != null && !ViewModel.IsLoading)
-        {
-            ViewModel.LoginCmd.Execute().Subscribe(_ => { }, _ => { });
-        }
     }
 }
 

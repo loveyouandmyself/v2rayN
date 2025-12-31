@@ -38,6 +38,10 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         ViewModel.UserName = ServiceLib.Services.AuthService.Instance.UserName ?? "";
         ViewModel.RaisePropertyChanged(nameof(ViewModel.HasUserName));
 
+        // 设置授权码（机器码）
+        ViewModel.MachineId = ServiceLib.Services.AuthService.Instance.MachineId ?? "";
+        ViewModel.RaisePropertyChanged(nameof(ViewModel.HasMachineId));
+
         switch (_config.UiItem.MainGirdOrientation)
         {
             case EGirdOrientation.Horizontal:

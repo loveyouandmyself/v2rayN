@@ -23,15 +23,25 @@
         DisableOpeningAnimation="True">
         <DockPanel>
             <DockPanel Margin="{StaticResource Margin8}" DockPanel.Dock="Top">
-                <TextBlock
-                    x:Name="txtUserName"
-                    Text="{Binding UserName}"
-                    FontSize="14"
+                <StackPanel
+                    DockPanel.Dock="Right"
+                    Orientation="Vertical"
                     VerticalAlignment="Center"
                     Margin="0,0,10,0"
-                    DockPanel.Dock="Right"
-                    IsVisible="{Binding HasUserName}" />
-                <!-- 隐藏“名称左侧的三点”(主题/更多按钮) -->
+                    Spacing="2">
+                    <TextBlock
+                        x:Name="txtUserName"
+                        Text="{Binding UserName}"
+                        FontSize="14"
+                        IsVisible="{Binding HasUserName}" />
+                    <TextBlock
+                        x:Name="txtMachineId"
+                        Text="{Binding MachineId}"
+                        FontSize="11"
+                        Foreground="Gray"
+                        IsVisible="{Binding HasMachineId}" />
+                </StackPanel>
+                <!-- 隐藏"名称左侧的三点"(主题/更多按钮) -->
                 <ContentControl x:Name="conTheme" DockPanel.Dock="Right" IsVisible="False" />
                 <Menu Margin="{StaticResource Margin4}">
                     <!-- 服务器菜单：为兼容现有 code-behind 保留控件，但整体隐藏 -->

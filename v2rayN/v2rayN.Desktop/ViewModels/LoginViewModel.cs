@@ -11,7 +11,7 @@ namespace v2rayN.Desktop.ViewModels;
 public class LoginViewModel : MyReactiveObject
 {
     [Reactive]
-    public string Key { get; set; } = string.Empty;
+    public string MachineId { get; set; } = string.Empty;
 
     private string _errorMessage = string.Empty;
     public string ErrorMessage
@@ -31,15 +31,18 @@ public class LoginViewModel : MyReactiveObject
 
     public bool HasErrorMessage => !ErrorMessage.IsNullOrEmpty();
 
-    public ReactiveCommand<Unit, LoginResponse?> LoginCmd { get; }
+    public ReactiveCommand<Unit, LoginResponse?> ActivateCmd { get; }
 
     public LoginViewModel()
     {
-        LoginCmd = ReactiveCommand.CreateFromTask(async () =>
+        // 初始化时生成机器唯一标识
+        MachineId = MachineIdUtils.GetMachineId();
+
+        ActivateCmd = ReactiveCommand.CreateFromTask(async () =>
         {
-            if (Key.IsNullOrEmpty())
+            if (MachineId.IsNullOrEmpty())
             {
-                ErrorMessage = "请输入授权码";
+                ErrorMessage = "无法生成机器标识";
                 return null;
             }
 
@@ -48,10 +51,10 @@ public class LoginViewModel : MyReactiveObject
 
             try
             {
-                var response = await AuthService.Instance.LoginAsync(Key);
+                var response = await AuthService.Instance.LoginAsync(MachineId);
                 if (!response.Success)
                 {
-                    ErrorMessage = response.Msg ?? "登录失败";
+                    ErrorMessage = response.Msg ?? "激活失败";
                     return null;
                 }
 
@@ -59,7 +62,7 @@ public class LoginViewModel : MyReactiveObject
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"登录失败: {ex.Message}";
+                ErrorMessage = $"激活失败: {ex.Message}";
                 return null;
             }
             finally

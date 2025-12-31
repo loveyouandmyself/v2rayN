@@ -69,6 +69,9 @@ public class MainWindowViewModel : MyReactiveObject
     [Reactive] public string UserName { get; set; } = string.Empty;
     public bool HasUserName => !UserName.IsNullOrEmpty();
 
+    [Reactive] public string MachineId { get; set; } = string.Empty;
+    public bool HasMachineId => !MachineId.IsNullOrEmpty();
+
     #endregion Menu
 
     #region Init

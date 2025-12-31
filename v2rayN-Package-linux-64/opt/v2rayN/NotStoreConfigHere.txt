@@ -1,0 +1,1 @@
+When this file exists, app will not store configs under this folder

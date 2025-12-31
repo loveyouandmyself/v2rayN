@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:vms="clr-namespace:v2rayN.Desktop.ViewModels;assembly=v2rayN"
-    Title="小鲤鱼-登录"
+    Title="小鲤鱼"
     Width="400"
     Height="250"
     MinWidth="350"
@@ -22,7 +22,7 @@
     </Window.Styles>
     <Grid RowDefinitions="Auto,*,Auto" Margin="20">
         <TextBlock
-            Text="请输入授权码"
+            Text="机器授权码"
             FontSize="18"
             FontWeight="Bold"
             Margin="0,0,0,20"
@@ -30,10 +30,10 @@
 
         <StackPanel Grid.Row="1" Spacing="15">
             <TextBox
-                Text="{Binding Key}"
-                Watermark="授权码"
-                IsEnabled="{Binding IsNotLoading}"
-                KeyDown="KeyDown_OnKeyDown" />
+                Text="{Binding MachineId}"
+                IsReadOnly="True"
+                TextWrapping="Wrap"
+                Background="#F5F5F5" />
 
             <TextBlock
                 Text="{Binding ErrorMessage}"
@@ -41,14 +41,14 @@
                 IsVisible="{Binding HasErrorMessage}" />
 
             <Button
-                Content="登录"
-                Command="{Binding LoginCmd}"
+                Content="激活"
+                Command="{Binding ActivateCmd}"
                 IsEnabled="{Binding IsNotLoading}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center" />
 
             <TextBlock
-                Text="登录中..."
+                Text="激活中..."
                 IsVisible="{Binding IsLoading}"
                 HorizontalAlignment="Center"
                 Foreground="Gray" />

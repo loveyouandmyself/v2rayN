@@ -16,6 +16,8 @@ public class AuthService
 
     public string? UserName => _userName;
 
+    public string? MachineId => _savedKey;
+
     public bool IsLoggedIn => _savedKey != null;
 
     /// <summary>
